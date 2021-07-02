@@ -2,12 +2,14 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from emails import serializers as email_serializers
 from emails.services import email_tracking_service
 
 # Create your views here.
 class EmailCampaignDetail(APIView):
+
+
     def post(self, request, *args, **kwargs):
         serializer = email_serializers.EmailCampaignSerializer(data=request.data)
         if serializer.is_valid():
@@ -16,6 +18,8 @@ class EmailCampaignDetail(APIView):
 
 
 class EmailOpenEventDetail(APIView):
+
+
     def _request_data(self, request):
         request_data = {
             'encoded_url_id': request.GET.get('encoded_url_id'),
@@ -24,5 +28,19 @@ class EmailOpenEventDetail(APIView):
 
     def get(self, request, *args, **kwargs):
         request_data = self._request_data(request=request)
-        email_open_event_object = email_tracking_service.EmailOpenEvent(data=request_data).perform_tasks()
+        email_tracking_service.EmailOpenEvent(data=request_data).perform_tasks()
         return HttpResponse('', content_type="image/jpeg")
+
+class EmailViewEventDetail(APIView):
+
+    def _request_data(self, request):
+        request_data = {
+            'encoded_click_string': request.GET.get('encoded_click_string')
+        }
+        return request_data
+
+    def get(self, request, *args, **kwargs):
+        request_data = self._request_data(request=request)
+        data = email_tracking_service.EmailClickEvent(data=request_data).perform_tasks_and_get_data()
+        return HttpResponseRedirect(data.get('destination_url'))
+
